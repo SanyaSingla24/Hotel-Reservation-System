@@ -1,5 +1,6 @@
 package com.example.hotel_reservation_system.model;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
 import java.math.BigDecimal;
 import java.util.List;
@@ -27,6 +28,7 @@ public class Room {
     @Column(nullable = false)
     private boolean available = true;
 
+    @JsonIgnore
     @OneToMany(mappedBy = "room", cascade = CascadeType.ALL)
     private List<Reservation> reservations;
 

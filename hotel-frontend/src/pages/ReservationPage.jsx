@@ -11,6 +11,7 @@ export default function ReservationPage() {
   const [checkOutDate, setCheckOutDate] = useState('');
   const [paymentMethod, setPaymentMethod] = useState('CARD');
   const [message, setMessage] = useState('');
+
   const navigate = useNavigate();
 
   const fetchData = useCallback(async () => {
@@ -19,9 +20,26 @@ export default function ReservationPage() {
         api.get('/rooms'),
         api.get('/reservations')
       ]);
-      setRooms(roomsRes.data);
-      setReservations(reservationsRes.data);
-    } catch {
+
+      console.log('ROOMS RESPONSE:', roomsRes.data);
+      console.log('RESERVATIONS RESPONSE:', reservationsRes.data);
+
+      const roomsData = Array.isArray(roomsRes.data)
+        ? roomsRes.data
+        : roomsRes.data?.content ||
+          roomsRes.data?.rooms ||
+          [];
+
+      const reservationsData = Array.isArray(reservationsRes.data)
+        ? reservationsRes.data
+        : reservationsRes.data?.content ||
+          reservationsRes.data?.reservations ||
+          [];
+
+      setRooms(roomsData);
+      setReservations(reservationsData);
+    } catch (err) {
+      console.error(err);
       navigate('/');
     }
   }, [navigate]);
@@ -35,28 +53,46 @@ export default function ReservationPage() {
       setMessage('❌ Please fill all fields');
       return;
     }
+
     try {
-      await api.post('/reservations', {
+      const res = await api.post('/reservations', {
         guestId: parseInt(guestId),
         roomId: parseInt(roomId),
         checkInDate,
         checkOutDate,
         paymentMethod
       });
-      setMessage('✅ Reservation created successfully!');
+
+      const newReservationId = res.data?.id;
+      if (newReservationId) {
+        await api.post(`/payments?reservationId=${newReservationId}&paymentMethod=${paymentMethod}`);
+      }
+
+      setMessage('✅ Reservation created and paid successfully!');
+
       setGuestId('');
       setRoomId('');
       setCheckInDate('');
       setCheckOutDate('');
+
       fetchData();
     } catch (err) {
-      setMessage('❌ ' + (err.response?.data?.error || err.response?.data || 'Failed to create reservation'));
+      setMessage(
+        '❌ ' +
+          (err.response?.data?.error ||
+            err.response?.data ||
+            'Failed to create reservation')
+      );
     }
   };
 
   const cancelReservation = async (id) => {
-    await api.delete(`/reservations/${id}`);
-    fetchData();
+    try {
+      await api.delete(`/reservations/${id}`);
+      fetchData();
+    } catch (err) {
+      console.error(err);
+    }
   };
 
   const logout = () => {
@@ -64,12 +100,15 @@ export default function ReservationPage() {
     navigate('/');
   };
 
-  const availableRooms = rooms.filter(r => r.available);
+  const availableRooms = Array.isArray(rooms)
+    ? rooms.filter((room) => room.available)
+    : [];
 
   return (
     <div style={{ maxWidth: 900, margin: '40px auto', padding: 16 }}>
       <div style={{ display: 'flex', justifyContent: 'space-between' }}>
         <h2>📅 Reservations</h2>
+
         <div>
           <button onClick={() => navigate('/rooms')}>Rooms</button>{' '}
           <button onClick={() => navigate('/dashboard')}>Dashboard</button>{' '}
@@ -77,63 +116,119 @@ export default function ReservationPage() {
         </div>
       </div>
 
-      <div style={{ border: '1px solid #ccc', borderRadius: 8, padding: 16, margin: '16px 0' }}>
+      <div
+        style={{
+          border: '1px solid #ccc',
+          borderRadius: 8,
+          padding: 16,
+          margin: '16px 0'
+        }}
+      >
         <h3>Create New Reservation</h3>
-        <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginBottom: 8 }}>
+
+        <div
+          style={{
+            display: 'flex',
+            gap: 8,
+            flexWrap: 'wrap',
+            marginBottom: 8
+          }}
+        >
           <input
             placeholder="Guest ID"
             value={guestId}
             onChange={(e) => setGuestId(e.target.value)}
-            style={{ width: 90 }}
+            style={{ width: 100 }}
           />
-          <select value={roomId} onChange={(e) => setRoomId(e.target.value)}>
+
+          <select
+            value={roomId}
+            onChange={(e) => setRoomId(e.target.value)}
+          >
             <option value="">Select Available Room</option>
-            {availableRooms.map(r => (
-              <option key={r.id} value={r.id}>
-                Room {r.roomNumber} — {r.roomType} (₹{r.pricePerNight}/night)
+
+            {availableRooms.map((room) => (
+              <option key={room.id} value={room.id}>
+                Room {room.roomNumber} — {room.roomType} (₹
+                {room.pricePerNight}/night)
               </option>
             ))}
           </select>
+
           <input
             type="date"
             value={checkInDate}
             onChange={(e) => setCheckInDate(e.target.value)}
           />
+
           <input
             type="date"
             value={checkOutDate}
             onChange={(e) => setCheckOutDate(e.target.value)}
           />
-          <select value={paymentMethod} onChange={(e) => setPaymentMethod(e.target.value)}>
+
+          <select
+            value={paymentMethod}
+            onChange={(e) => setPaymentMethod(e.target.value)}
+          >
             <option value="CARD">CARD</option>
             <option value="CASH">CASH</option>
             <option value="UPI">UPI</option>
             <option value="NET_BANKING">NET_BANKING</option>
           </select>
-          <button onClick={createReservation}>Book Now</button>
+
+          <button onClick={createReservation}>
+            Book Now
+          </button>
         </div>
+
         {message && <p>{message}</p>}
       </div>
 
-      <table border="1" cellPadding="8" style={{ width: '100%', borderCollapse: 'collapse' }}>
+      <table
+        border="1"
+        cellPadding="8"
+        style={{
+          width: '100%',
+          borderCollapse: 'collapse'
+        }}
+      >
         <thead>
           <tr>
-            <th>ID</th><th>Guest ID</th><th>Room</th><th>Check-In</th><th>Check-Out</th><th>Total Cost</th><th>Status</th><th>Action</th>
+            <th>ID</th>
+            <th>Guest ID</th>
+            <th>Room</th>
+            <th>Check-In</th>
+            <th>Check-Out</th>
+            <th>Total Cost</th>
+            <th>Status</th>
+            <th>Action</th>
           </tr>
         </thead>
+
         <tbody>
-          {reservations.map(r => (
-            <tr key={r.id}>
-              <td>{r.id}</td>
-              <td>{r.guest?.id}</td>
-              <td>{r.room?.roomNumber}</td>
-              <td>{r.checkInDate}</td>
-              <td>{r.checkOutDate}</td>
-              <td>₹{r.totalCost}</td>
-              <td>{r.status}</td>
-              <td><button onClick={() => cancelReservation(r.id)}>Cancel</button></td>
-            </tr>
-          ))}
+          {Array.isArray(reservations) &&
+            reservations.map((reservation) => (
+              <tr key={reservation.id}>
+                <td>{reservation.id}</td>
+                <td>{reservation.guest?.id}</td>
+                <td>{reservation.room?.roomNumber}</td>
+                <td>{reservation.checkInDate}</td>
+                <td>{reservation.checkOutDate}</td>
+                <td>₹{reservation.totalCost}</td>
+                <td>{reservation.status}</td>
+
+                <td>
+                  <button
+                    onClick={() =>
+                      cancelReservation(reservation.id)
+                    }
+                  >
+                    Cancel
+                  </button>
+                </td>
+              </tr>
+            ))}
         </tbody>
       </table>
     </div>

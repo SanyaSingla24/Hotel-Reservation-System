@@ -1,4 +1,5 @@
 package com.example.hotel_reservation_system.model;
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
 import java.util.List;
 @Entity
@@ -20,6 +21,7 @@ public class Guest {
     private String nationalId;
     private String password;
 
+    @JsonIgnore
     @OneToMany(mappedBy = "guest", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<Reservation> reservations;
 

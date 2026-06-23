@@ -25,7 +25,9 @@ export default function DashboardPage() {
 
       // Bar Chart data — monthly summary
       const monRes = await api.get(`/reservations/report/monthly?year=${year}&month=${month}`);
-      const summary = Array.isArray(monRes.data) && monRes.data.length > 0 ? monRes.data[0] : null;
+      const summary = Array.isArray(monRes.data)
+        ? monRes.data.find(item => item.year === year && item.month === month)
+        : null;
       setMonthlyData([
         { name: 'Reservations', count: summary?.totalReservations || 0 },
         { name: 'Nights',       count: summary?.totalNightsBooked || 0 },

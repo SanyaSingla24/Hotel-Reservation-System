@@ -12,8 +12,8 @@ export default function RoomPage() {
 
   const fetchRooms = useCallback(async () => {
     try {
-      const res = await api.get('/rooms');
-      setRooms(res.data);
+     const res = await api.get('/rooms');
+     setRooms(Array.isArray(res.data) ? res.data : []);
     } catch {
       navigate('/');
     }
