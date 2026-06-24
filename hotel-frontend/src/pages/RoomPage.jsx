@@ -51,8 +51,9 @@ export default function RoomPage() {
       <div style={{ display: 'flex', justifyContent: 'space-between' }}>
         <h2>🏨 Rooms</h2>
         <div>
-         <button onClick={() => navigate('/reservations')}>Reservations</button>{' '}
-         <button onClick={() => navigate('/dashboard')}>Dashboard</button>{' '}
+          <button onClick={() => navigate('/reservations')}>Reservations</button>{' '}
+          <button onClick={() => navigate('/guests')}>Guests</button>{' '}
+          <button onClick={() => navigate('/dashboard')}>Dashboard</button>{' '}
           <button onClick={logout}>Logout</button>
         </div>
       </div>

@@ -53,6 +53,7 @@ export default function DashboardPage() {
         <div>
           <button onClick={() => navigate('/rooms')}>Rooms</button>{' '}
           <button onClick={() => navigate('/reservations')}>Reservations</button>{' '}
+          <button onClick={() => navigate('/guests')}>Guests</button>{' '}
           <button onClick={logout}>Logout</button>
         </div>
       </div>

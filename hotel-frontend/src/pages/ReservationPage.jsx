@@ -5,6 +5,7 @@ import { useNavigate } from 'react-router-dom';
 export default function ReservationPage() {
   const [rooms, setRooms] = useState([]);
   const [reservations, setReservations] = useState([]);
+  const [guests, setGuests] = useState([]);
   const [guestId, setGuestId] = useState('');
   const [roomId, setRoomId] = useState('');
   const [checkInDate, setCheckInDate] = useState('');
@@ -16,9 +17,10 @@ export default function ReservationPage() {
 
   const fetchData = useCallback(async () => {
     try {
-      const [roomsRes, reservationsRes] = await Promise.all([
+      const [roomsRes, reservationsRes, guestsRes] = await Promise.all([
         api.get('/rooms'),
-        api.get('/reservations')
+        api.get('/reservations'),
+        api.get('/guests')
       ]);
 
       console.log('ROOMS RESPONSE:', roomsRes.data);
@@ -27,17 +29,23 @@ export default function ReservationPage() {
       const roomsData = Array.isArray(roomsRes.data)
         ? roomsRes.data
         : roomsRes.data?.content ||
-          roomsRes.data?.rooms ||
-          [];
+        roomsRes.data?.rooms ||
+        [];
 
       const reservationsData = Array.isArray(reservationsRes.data)
         ? reservationsRes.data
         : reservationsRes.data?.content ||
-          reservationsRes.data?.reservations ||
-          [];
+        reservationsRes.data?.reservations ||
+        [];
+
+      const guestsData = Array.isArray(guestsRes.data)
+        ? guestsRes.data
+        : guestsRes.data?.content ||
+        [];
 
       setRooms(roomsData);
       setReservations(reservationsData);
+      setGuests(guestsData);
     } catch (err) {
       console.error(err);
       navigate('/');
@@ -79,9 +87,9 @@ export default function ReservationPage() {
     } catch (err) {
       setMessage(
         '❌ ' +
-          (err.response?.data?.error ||
-            err.response?.data ||
-            'Failed to create reservation')
+        (err.response?.data?.error ||
+          err.response?.data ||
+          'Failed to create reservation')
       );
     }
   };
@@ -111,6 +119,7 @@ export default function ReservationPage() {
 
         <div>
           <button onClick={() => navigate('/rooms')}>Rooms</button>{' '}
+          <button onClick={() => navigate('/guests')}>Guests</button>{' '}
           <button onClick={() => navigate('/dashboard')}>Dashboard</button>{' '}
           <button onClick={logout}>Logout</button>
         </div>
@@ -134,12 +143,17 @@ export default function ReservationPage() {
             marginBottom: 8
           }}
         >
-          <input
-            placeholder="Guest ID"
+          <select
             value={guestId}
             onChange={(e) => setGuestId(e.target.value)}
-            style={{ width: 100 }}
-          />
+          >
+            <option value="">Select Guest</option>
+            {guests.map((guest) => (
+              <option key={guest.id} value={guest.id}>
+                {guest.fullName} (ID: {guest.id})
+              </option>
+            ))}
+          </select>
 
           <select
             value={roomId}
